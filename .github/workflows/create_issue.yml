@@ -43,7 +43,7 @@ jobs:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           ORGANIZATION: ${{ github.repository_owner }}
-          $PROJECT_NUMBER: 2
+          PROJECT_NUMBER: 2
         run: |
           gh api graphql -f query='
             query($org: String!, $number: Int!) {

@@ -15,8 +15,8 @@ jobs:
       - name: Create team sync issue
         run: |
           echo $(gh auth status)
-          echo $(gh project list --format json)
-          echo $(gh project field-list 2 --format json
+          echo $(gh project list --format json --owner "$OWNER")
+          echo $(gh project field-list 2 --format json)
           project_id=$(gh project list\
             --format json \
             --jq '.projects[] | select(.number == "$PROJECT_NO") | .id')
@@ -50,6 +50,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
           TITLE: 後ほど対応： ${{ github.event.pull_request.title }}
           ASSIGNEES: ${{ github.event.sender.login }}
           LABELS: not now but soon

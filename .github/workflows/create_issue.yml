@@ -17,9 +17,9 @@ jobs:
           echo $(gh auth status)
           echo $(gh project list --format json)
           echo $(gh project field-list 2 --format json
-          project_id=$(gh project list\
-            --format json \
-            --jq '.projects[] | select(.number == "$PROJECT_NO") | .id')
+#          project_id=$(gh project list\
+#            --format json \
+#            --jq '.projects[] | select(.number == "$PROJECT_NO") | .id')
           new_issue_url=$(gh issue create \
             --title "$TITLE" \
             --assignee "$ASSIGNEES" \
@@ -41,12 +41,12 @@ jobs:
             priority_field_value_id=$(gh project field list "$PROJECT_NO" \
             --format json \
             --jq '.fields[] | select(.name == "Priority") | .options[] | select(.name == "P2") | .id')
-          gh project item-edit --id "$new_item_id" \
-            --field "$status_field_id" 
-            ----single-select-option-id "$status_field_value_id"
-          gh project item-edit --id "$new_item_id" \
-            --field "$priority_field_id" \
-            --single-select-option-id "$priority_field_value_id"
+#          gh project item-edit --id "$new_item_id" \
+#            --field "$status_field_id"
+#            ----single-select-option-id "$status_field_value_id"
+#          gh project item-edit --id "$new_item_id" \
+#            --field "$priority_field_id" \
+#            --single-select-option-id "$priority_field_value_id"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

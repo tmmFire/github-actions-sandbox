@@ -1,0 +1,60 @@
+name: Weekly Team Sync
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  create_issue:
+    name: Create team sync issue
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'later gator'
+    permissions:
+      issues: write
+    steps:
+      - name: Create team sync issue
+        run: |
+          if [[ $CLOSE_PREVIOUS == true ]]; then
+            previous_issue_number=$(gh issue list \
+              --label "$LABELS" \
+              --json number \
+              --jq '.[0].number')
+            if [[ -n $previous_issue_number ]]; then
+              gh issue close "$previous_issue_number"
+              gh issue unpin "$previous_issue_number"
+            fi
+          fi
+          new_issue_url=$(gh issue create \
+            --title "$TITLE" \
+            --assignee "$ASSIGNEES" \
+            --label "$LABELS" \
+            --body "$BODY")
+          if [[ $PINNED == true ]]; then
+            gh issue pin "$new_issue_url"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: [後ほど対応] ${{ github.event.pull_request.title }}
+          ASSIGNEES: ${{ github.event.sender.login }}
+          LABELS: not now but soon
+          BODY: |
+            ### 対応するPR
+
+            - ${{ github.event.pull_request.title }} ${{ github.event.pull_request.html_url }}
+
+          PINNED: false
+          CLOSE_PREVIOUS: false
+  PR_convert_to_draft:
+    name: Convert PR to draft
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'later gator'
+    needs: create_issue
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Convert PR to draft
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}

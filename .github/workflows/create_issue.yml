@@ -70,7 +70,9 @@ jobs:
             }
           }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
           
-          echo 'PROJECT_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.number == "$PROJECT_NO") | .id'' project_data.json) >> $GITHUB_ENV
+          echo project_data.json
+          
+          echo 'PROJECT_ID='$(jq '.data.organization.projectV2.id' project_data.json) >> $GITHUB_ENV
           echo 'PRIORITY_FIELD_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .id' project_data.json) >> $GITHUB_ENV
           echo 'P2_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .options[] | select(.name=="P2") |.id' project_data.json) >> $GITHUB_ENV
           echo 'STATUS_FIELD_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Status") | .id' project_data.json) >> $GITHUB_ENV

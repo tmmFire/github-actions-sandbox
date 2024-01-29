@@ -12,15 +12,23 @@ jobs:
       issues: write
       repository-projects: write
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PEM }}
+
       - name: Create team sync issue
         run: |
+          echo $(gh project list --format json --owner ${{ github.repository_owner }})
           gh issue create \
             --title "$TITLE" \
             --assignee "$ASSIGNEES" \
             --label "$LABELS" \
             --body "$BODY"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           TITLE: 後ほど対応： ${{ github.event.pull_request.title }}
           ASSIGNEES: ${{ github.event.sender.login }}
@@ -43,8 +51,8 @@ jobs:
         id: generate_token
         uses: actions/create-github-app-token@v1
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PEM }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PEM }}
 
       - name: Convert PR to draft
         run: |

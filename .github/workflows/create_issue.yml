@@ -16,7 +16,7 @@ jobs:
         run: |
           project_id=$(gh project list\
             --format json \
-            --jq '.projects[] | select(.no == "$PROJECT_NO") | .id')
+            --jq '.projects[] | select(.number == "$PROJECT_NO") | .id')
           new_issue_url=$(gh issue create \
             --title "$TITLE" \
             --assignee "$ASSIGNEES" \

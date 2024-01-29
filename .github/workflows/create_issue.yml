@@ -1,4 +1,4 @@
-name: Weekly Team Sync
+name: Later Gator
 on:
   pull_request:
     types: [labeled]
@@ -10,31 +10,44 @@ jobs:
     if: github.event.label.name == 'later gator'
     permissions:
       issues: write
+      repository-projects: write
     steps:
       - name: Create team sync issue
         run: |
-          if [[ $CLOSE_PREVIOUS == true ]]; then
-            previous_issue_number=$(gh issue list \
-              --label "$LABELS" \
-              --json number \
-              --jq '.[0].number')
-            if [[ -n $previous_issue_number ]]; then
-              gh issue close "$previous_issue_number"
-              gh issue unpin "$previous_issue_number"
-            fi
-          fi
+          project_id=$(gh project list\
+            --format json \
+            --jq '.projects[] | select(.no == $PROJECT_NO) | .id')
           new_issue_url=$(gh issue create \
             --title "$TITLE" \
             --assignee "$ASSIGNEES" \
             --label "$LABELS" \
             --body "$BODY")
-          if [[ $PINNED == true ]]; then
-            gh issue pin "$new_issue_url"
-          fi
+          new_item_id=$(gh project item-add $PROJECT_NO \
+            --url "$new_issue_url" \
+            --format json \
+            --jq '.id')
+          status_field_id=$(gh project field list $PROJECT_NO \
+            --format json \
+            --jq '.fields[] | select(.name == "Status") | .id')
+          status_field_value_id=$(gh project field list $PROJECT_NO \
+            --format json \
+            --jq '.fields[] | select(.name == "Status") | .options[] | select(.name == "Todo") | .id')
+          priority_field_id=$(gh project field list $PROJECT_NO \
+            --format json \
+            --jq '.fields[] | select(.name == "Priority") | .id')
+            priority_field_value_id=$(gh project field list $PROJECT_NO \
+            --format json \
+            --jq '.fields[] | select(.name == "Priority") | .options[] | select(.name == "P2") | .id')
+          gh project item-edit --id $new_item_id \
+            --field "$status_field_id" 
+            ----single-select-option-id "$status_field_value_id"
+          gh project item-edit --id $new_item_id \
+            --field "$priority_field_id" \
+            --single-select-option-id "$priority_field_value_id"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TITLE: 後ほど対応君： ${{ github.event.pull_request.title }}
+          TITLE: 後ほど対応： ${{ github.event.pull_request.title }}
           ASSIGNEES: ${{ github.event.sender.login }}
           LABELS: not now but soon
           BODY: |
@@ -42,8 +55,7 @@ jobs:
 
             - ${{ github.event.pull_request.title }} ${{ github.event.pull_request.html_url }}
 
-          PINNED: false
-          CLOSE_PREVIOUS: false
+          PROJECT_NO: 2
   PR_convert_to_draft:
     name: Convert PR to draft
     runs-on: ubuntu-latest
@@ -54,7 +66,7 @@ jobs:
     steps:
       - name: Convert PR to draft
         run: |
-          gh pr edit ${{ github.event.pull_request.number }} --draft
+          gh pr ready ${{ github.event.pull_request.number }} --undo
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

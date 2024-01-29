@@ -1,7 +1,7 @@
 name: Later Gator
 on:
   pull_request:
-    types: [labeled]
+    types: [ labeled ]
 
 jobs:
   create_issue:
@@ -20,13 +20,6 @@ jobs:
           private-key: ${{ secrets.APP_PEM }}
 
       - name: Create team sync issue
-        run: |
-          echo $(gh project list --format json --owner ${{ github.repository_owner }})
-          gh issue create \
-            --title "$TITLE" \
-            --assignee "$ASSIGNEES" \
-            --label "$LABELS" \
-            --body "$BODY"
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           GH_REPO: ${{ github.repository }}
@@ -37,26 +30,107 @@ jobs:
             ### 対応するPR
 
             - ${{ github.event.pull_request.title }} ${{ github.event.pull_request.html_url }}
-
-          PROJECT_NO: 2
-  PR_convert_to_draft:
-    name: Convert PR to draft
-    runs-on: ubuntu-latest
-    if: github.event.label.name == 'later gator'
-    needs: create_issue
-    permissions:
-      pull-requests: write
-    steps:
-      - name: Generate token
-        id: generate_token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PEM }}
-
-      - name: Convert PR to draft
         run: |
-          gh pr ready ${{ github.event.pull_request.number }} --undo
+          echo $(gh project list --format json --owner ${{ github.repository_owner }})
+          gh issue create \
+            --title "$TITLE" \
+            --assignee "$ASSIGNEES" \
+            --label "$LABELS" \
+            --body "$BODY"
+
+      - name: add issue to project
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           GH_REPO: ${{ github.repository }}
+          ORGANIZATION: ${{ github.repository_owner }}
+          PROJECT_NO: 2
+        run: |
+          gh api graphql -f query='
+            query($org: String!, $number: Int!) {
+              organization(login: $org){
+                projectV2(number: $number) {
+                  id
+                  fields(first:20) {
+                  nodes {
+                    ... on ProjectV2Field {
+                      id
+                      name
+                    }
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
+          
+          echo 'PROJECT_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.number == "$PROJECT_NO") | .id'' project_data.json) >> $GITHUB_ENV
+          echo 'PRIORITY_FIELD_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .id' project_data.json) >> $GITHUB_ENV
+          echo 'P2_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .options[] | select(.name=="P2") |.id' project_data.json) >> $GITHUB_ENV
+          echo 'STATUS_FIELD_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Status") | .id' project_data.json) >> $GITHUB_ENV
+          echo 'TODO_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Status") | .options[] | select(.name=="Todo") |.id' project_data.json) >> $GITHUB_ENV
+          
+          echo $GITHUB_ENV
+
+      - name: add issue to project
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_ID: ${{ github.event.pull_request.node_id }}
+        run: |
+          item_id="$( gh api graphql -f query='
+          mutation($project:ID!, $pr:ID!) {
+            addProjectV2ItemById(input: {projectId: $project, contentId: $pr}) {
+              item {
+                id
+              }
+            }
+          }' -f project=$PROJECT_ID -f pr=$PR_ID --jq '.data.addProjectV2ItemById.item.id')"
+            
+          echo 'ITEM_ID='$item_id >> $GITHUB_ENV
+
+      - name: Set fields
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          echo $TODO_OPTION_ID
+          echo ${{ env.TODO_OPTION_ID }}
+          gh api graphql -f query='
+            mutation (
+              $project: ID!
+              $item: ID!
+              $status_field: ID!
+              $status_value: String!
+              $date_field: ID!
+              $date_value: Date!
+            ) {
+              set_status: updateProjectV2ItemFieldValue(input: {
+                projectId: $project
+                itemId: $item
+                fieldId: $status_field
+                value: {
+                  singleSelectOptionId: $status_value
+                  }
+              }) {
+                projectV2Item {
+                  id
+                  }
+              }
+              set_priority: updateProjectV2ItemFieldValue(input: {
+                projectId: $project
+                itemId: $item
+                fieldId: $priority_field
+                value: {
+                  date: $priority_value
+                }
+              }) {
+                projectV2Item {
+                  id
+                }
+              }
+            }' -f project=$PROJECT_ID -f item=$ITEM_ID -f status_field=$STATUS_FIELD_ID -f status_value=${{ env.TODO_OPTION_ID }} -f $priority_field=$PRIORITY_FIELD_ID -f priority_value=$P2_OPTION_ID --silent

@@ -14,7 +14,9 @@ jobs:
     steps:
       - name: Create team sync issue
         run: |
+          echo $(gh auth status)
           echo $(gh project list --format json)
+          echo $(gh project field-list 2 --format json
           project_id=$(gh project list\
             --format json \
             --jq '.projects[] | select(.number == "$PROJECT_NO") | .id')

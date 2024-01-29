@@ -42,12 +42,12 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           GH_REPO: ${{ github.repository }}
-          ORGANIZATION: ${{ github.repository_owner }}
+          USER: ${{ github.repository_owner }}
           PROJECT_NUMBER: 2
         run: |
           gh api graphql -f query='
             query($org: String!, $number: Int!) {
-              organization(login: $org){
+              user(login: $org){
                 projectV2(number: $number) {
                   id
                   fields(first:20) {
@@ -68,7 +68,7 @@ jobs:
                 }
               }
             }
-          }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
+          }' -f org=$USER -F number=$PROJECT_NUMBER > project_data.json
           
           echo project_data.json
           

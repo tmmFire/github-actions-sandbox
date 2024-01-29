@@ -14,43 +14,14 @@ jobs:
     steps:
       - name: Create team sync issue
         run: |
-          echo $OWNER
-          echo $(gh project list --format json --owner "$OWNER")
-          echo $(gh project field-list 2 --format json --owner "$OWNER")
-          project_id=$(gh project list\
-            --format json \
-            --jq '.projects[] | select(.number == "$PROJECT_NO") | .id')
-          new_issue_url=$(gh issue create \
+          gh issue create \
             --title "$TITLE" \
             --assignee "$ASSIGNEES" \
             --label "$LABELS" \
-            --body "$BODY")
-          new_item_id=$(gh project item-add "$PROJECT_NO" \
-            --url "$new_issue_url" \
-            --format json \
-            --jq '.id')
-          status_field_id=$(gh project field list "$PROJECT_NO" \
-            --format json \
-            --jq '.fields[] | select(.name == "Status") | .id')
-          status_field_value_id=$(gh project field list "$PROJECT_NO" \
-            --format json \
-            --jq '.fields[] | select(.name == "Status") | .options[] | select(.name == "Todo") | .id')
-          priority_field_id=$(gh project field list "$PROJECT_NO" \
-            --format json \
-            --jq '.fields[] | select(.name == "Priority") | .id')
-            priority_field_value_id=$(gh project field list "$PROJECT_NO" \
-            --format json \
-            --jq '.fields[] | select(.name == "Priority") | .options[] | select(.name == "P2") | .id')
-          gh project item-edit --id "$new_item_id" \
-            --field "$status_field_id"
-            ----single-select-option-id "$status_field_value_id"
-          gh project item-edit --id "$new_item_id" \
-            --field "$priority_field_id" \
-            --single-select-option-id "$priority_field_value_id"
+            --body "$BODY"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          OWNER: ${{ github.repository_owner }}
           TITLE: 後ほど対応： ${{ github.event.pull_request.title }}
           ASSIGNEES: ${{ github.event.sender.login }}
           LABELS: not now but soon

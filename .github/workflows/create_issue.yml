@@ -34,7 +34,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TITLE: [後ほど対応] ${{ github.event.pull_request.title }}
+          TITLE: 後ほど対応君： ${{ github.event.pull_request.title }}
           ASSIGNEES: ${{ github.event.sender.login }}
           LABELS: not now but soon
           BODY: |

@@ -152,8 +152,8 @@ jobs:
         run: |
           echo ${{ env.PR_ASSIGNEES }}
           if [ -n ${{ env.PR_ASSIGNEES }} ]; then
-            echo gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-assignee "$PR_ASSIGNEES" 
-            gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-assignee "$PR_ASSIGNEES"
+            echo gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-assignee ${{ env.PR_ASSIGNEES }} 
+            gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-assignee ${{ env.PR_ASSIGNEES }}
           else
             echo "No assignees to remove."
           fi

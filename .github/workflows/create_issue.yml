@@ -136,3 +136,19 @@ jobs:
                 }
               }
             }' -f project=$PROJECT_ID -f item=$ITEM_ID -f status_field=$STATUS_FIELD_ID -f status_value=${{ env.TODO_OPTION_ID }} -f $priority_field=$PRIORITY_FIELD_ID -f priority_value=$P2_OPTION_ID --silent
+  unassign_pr:
+    name: Unassign PR
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'later gator'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Unassign PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_ASSIGNEES: ${{ github.event.pull_request.assignee }}
+        run: |
+          echo ${{ github.event.pull_request.assignee }}
+          echo ${{ github.event.pull_request.assignee.login }}

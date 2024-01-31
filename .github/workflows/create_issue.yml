@@ -150,7 +150,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_ASSIGNEES: $(echo '${{ toJson(github.event.pull_request.assignees) }}' | jq -r '.[].login')
         run: |
-          if [ -n "$ASSIGNEES" ]; then
+          echo ${{ env.PR_ASSIGNEES }}
+          if [ -n ${{ env.PR_ASSIGNEES }} ]; then
             gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-assignee "$PR_ASSIGNEES"
           else
             echo "No assignees to remove."
